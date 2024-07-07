@@ -1,7 +1,7 @@
 # client.py
 
 import tkinter as tk
-from tkinter import simpledialog, scrolledtext
+from tkinter import scrolledtext
 import asyncio
 import websockets
 import threading
@@ -32,7 +32,7 @@ class ChatClient:
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"聊天 - {self.username}")
+        self.root.title(f"欢迎使用 DLChatting ， - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
@@ -70,10 +70,6 @@ class ChatClient:
 
     async def send_message(self, message):
         await self.websocket.send(message)
-        self.chat_text.config(state='normal')
-        self.chat_text.insert(tk.END, f"{self.username}: {message}\n")
-        self.chat_text.config(state='disabled')
-        self.chat_text.yview(tk.END)
 
     async def receive_messages(self):
         async for message in self.websocket:
