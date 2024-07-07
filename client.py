@@ -1,11 +1,12 @@
 # client.py
 
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, messagebox
 import asyncio
 import websockets
 import threading
 import sqlite3
+import time
 
 class ChatClient:
     def __init__(self, root):
@@ -32,11 +33,16 @@ class ChatClient:
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"欢迎使用 DLChatting ， - {self.username}")
+        self.root.title(f"聊天 - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
         self.chat_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        
+        # 定义颜色标签
+        self.chat_text.tag_configure("green", foreground="green")
+        self.chat_text.tag_configure("yellow", foreground="yellow")
+        self.chat_text.tag_configure("orange", foreground="orange")
 
         self.message_entry = tk.Text(self.root, height=3)
         self.message_entry.pack(padx=10, pady=10, fill=tk.X)
@@ -48,13 +54,21 @@ class ChatClient:
     def load_history(self):
         conn = sqlite3.connect('chat.db')
         cursor = conn.cursor()
-        cursor.execute('SELECT username, message FROM messages ORDER BY timestamp')
+        cursor.execute('SELECT username, message FROM (SELECT * FROM messages ORDER BY timestamp DESC LIMIT 20) ORDER BY timestamp')
         rows = cursor.fetchall()
         conn.close()
 
         self.chat_text.config(state='normal')
         for row in rows:
-            self.chat_text.insert(tk.END, f"{row[0]}: {row[1]}\n")
+            message = f"{row[0]}: {row[1]}"
+            color = None
+            if row[0] == "系统":
+                if "加入了聊天室" in row[1]:
+                    color = "green"
+                elif "退出了聊天室" in row[1]:
+                    color = "orange"
+            self.insert_message(message, color)
+        self.insert_message("---以上是历史记录", "green")
         self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
@@ -71,12 +85,28 @@ class ChatClient:
     async def send_message(self, message):
         await self.websocket.send(message)
 
-    async def receive_messages(self):
-        async for message in self.websocket:
-            self.chat_text.config(state='normal')
+    def insert_message(self, message, color=None):
+        self.chat_text.config(state='normal')
+        if color:
+            self.chat_text.insert(tk.END, message + "\n", color)
+        else:
             self.chat_text.insert(tk.END, message + "\n")
-            self.chat_text.config(state='disabled')
-            self.chat_text.yview(tk.END)
+        self.chat_text.config(state='disabled')
+        self.chat_text.yview(tk.END)
+
+    async def receive_messages(self):
+        try:
+            async for message in self.websocket:
+                color = None
+                if message.startswith("\033[32m") and message.endswith("\033[0m"):
+                    message = message[5:-4]
+                    color = "green"
+                elif message.startswith("\033[33m") and message.endswith("\033[0m"):
+                    message = message[5:-4]
+                    color = "orange"
+                self.insert_message(message, color)
+        except websockets.ConnectionClosed:
+            self.handle_disconnection()
 
     async def connect(self):
         uri = f"ws://localhost:8765/{self.username}"
@@ -87,6 +117,19 @@ class ChatClient:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.connect())
+
+    def handle_disconnection(self):
+        for i in range(1, 6):
+            self.insert_message(f"系统: 掉线了！正在重新连接……（{i}/5）", "orange")
+            time.sleep(1)
+            try:
+                self.websocket = asyncio.run(self.connect())
+                return
+            except:
+                continue
+
+        messagebox.showerror("连接错误", "从服务器断开连接")
+        self.root.quit()
 
 if __name__ == "__main__":
     root = tk.Tk()

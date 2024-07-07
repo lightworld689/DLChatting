@@ -33,20 +33,30 @@ def save_message(username, message):
 async def broadcast_message(message):
     if clients:
         tasks = [client.send(message) for client in clients]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 # 处理每个客户端连接
 async def handle_client(websocket, path):
     username = path.strip('/')
     clients.add(websocket)
     try:
+        join_message = f"{username} 加入了聊天室"
+        await broadcast_message(f"\033[32m系统: {join_message}\033[0m")
+        save_message("系统", join_message)
         async for message in websocket:
             formatted_message = f"{username}: {message}"
             print(formatted_message)
             save_message(username, message)
             await broadcast_message(formatted_message)
+    except websockets.ConnectionClosedError:
+        print(f"{username} 断开连接")
+    except Exception as e:
+        print(f"连接处理失败: {e}")
     finally:
         clients.remove(websocket)
+        leave_message = f"{username} 退出了聊天室"
+        await broadcast_message(f"\033[33m系统: {leave_message}\033[0m")  # 改为橙色
+        save_message("系统", leave_message)
 
 # 启动WebSocket服务器
 async def main():
