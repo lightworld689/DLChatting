@@ -75,7 +75,7 @@ class ChatClient:
                 elif "退出了聊天室" in row[1]:
                     color = "orange"
             self.insert_message(message, color)
-        self.insert_message(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 系统: ---以上是历史记录", "green")
+        self.insert_message(f"---以上是历史记录---", "green")
         self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
