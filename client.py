@@ -6,6 +6,7 @@ import threading
 import sqlite3
 import time
 import os
+import re  # 导入re模块
 from datetime import datetime
 
 TrustUserMode = False  # 不要开启这个，自用
@@ -37,12 +38,16 @@ class ChatClient:
             self.username = self.username_entry.get()
         if self.username:
             if not TrustUserMode:
+                # 检查用户名是否符合要求
+                if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username):
+                    messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20")
+                    return
                 self.login_window.destroy()
             self.create_chat_window()
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"聊天 - {self.username}")
+        self.root.title(f"欢迎使用DLChatting客户端 - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
@@ -73,9 +78,10 @@ class ChatClient:
                 if "加入了聊天室" in row[1]:
                     color = "green"
                 elif "退出了聊天室" in row[1]:
-                    color = "orange"
+                    color = "green"
             self.insert_message(message, color)
         self.insert_message(f"---以上是历史记录---", "green")
+        self.insert_message(f"/list 查看在线人数", "green")
         self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
@@ -127,7 +133,7 @@ class ChatClient:
 
     def handle_disconnection(self):
         for i in range(1, 6):
-            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 系统: 掉线了！正在重新连接……（{i}/5）"
+            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……（{i}/5）"
             self.insert_message(reconnect_message, "orange")
             time.sleep(1)
             try:
