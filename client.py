@@ -1,5 +1,3 @@
-# client.py
-
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import asyncio
@@ -7,12 +5,14 @@ import websockets
 import threading
 import sqlite3
 import time
+from datetime import datetime
 
 class ChatClient:
     def __init__(self, root):
         self.root = root
         self.username = None
         self.websocket = None
+        self.loop = None
         self.create_login_window()
 
     def create_login_window(self):
@@ -38,10 +38,8 @@ class ChatClient:
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
         self.chat_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        
-        # 定义颜色标签
+
         self.chat_text.tag_configure("green", foreground="green")
-        self.chat_text.tag_configure("yellow", foreground="yellow")
         self.chat_text.tag_configure("orange", foreground="orange")
 
         self.message_entry = tk.Text(self.root, height=3)
@@ -60,7 +58,7 @@ class ChatClient:
 
         self.chat_text.config(state='normal')
         for row in rows:
-            message = f"{row[0]}: {row[1]}"
+            message = f"{row[1]}"
             color = None
             if row[0] == "系统":
                 if "加入了聊天室" in row[1]:
@@ -68,7 +66,7 @@ class ChatClient:
                 elif "退出了聊天室" in row[1]:
                     color = "orange"
             self.insert_message(message, color)
-        self.insert_message("---以上是历史记录", "green")
+        self.insert_message(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 系统: ---以上是历史记录", "green")
         self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
@@ -120,10 +118,11 @@ class ChatClient:
 
     def handle_disconnection(self):
         for i in range(1, 6):
-            self.insert_message(f"系统: 掉线了！正在重新连接……（{i}/5）", "orange")
+            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 系统: 掉线了！正在重新连接……（{i}/5）"
+            self.insert_message(reconnect_message, "orange")
             time.sleep(1)
             try:
-                self.websocket = asyncio.run(self.connect())
+                asyncio.run(self.connect())
                 return
             except:
                 continue
