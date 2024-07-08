@@ -144,8 +144,10 @@ class ChatClient:
         self.loop.run_until_complete(self.connect())
 
     def handle_disconnection(self):
-        for i in range(1, 6):
-            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……（{i}/5）"
+#        for i in range(1, 6):
+        while True:
+#            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……（{i}/5）"
+            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……"
             self.insert_message(reconnect_message, "orange", notify=False)
             time.sleep(1)
             try:
