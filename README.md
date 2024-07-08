@@ -12,10 +12,23 @@
 
 ### 使用方法
 
+安装requirements
+
+```bash
+pip install -r requirements.txt
+```
+
 在服务端输入
 
 ```bash
 python server.py
+```
+
+要连接的客户端先打开client.py调整设置
+
+```python
+NotifyOnMessage = True  # 默认开启消息通知
+TrustUserMode = False  # 不要开启这个，自用
 ```
 
 然后输入
@@ -24,7 +37,16 @@ python server.py
 python client.py
 ```
 
-即可连接！`注意：如果您打算在客户端连接非localhost的服务器，也就是在不同的电脑连接，需自行在源代码进行修改，后期会添加设置进行修改。`
+即可连接！
+
+注意：如果您打算在客户端连接非localhost的服务器，也就是在不同的电脑连接，需自行在源代码进行修改，后期会添加设置进行修改。
+
+```python
+    async def connect(self):
+        uri = f"ws://localhost:8765/{self.username}"
+        self.websocket = await websockets.connect(uri)
+        await self.receive_messages()
+```
 
 ### 关于
 

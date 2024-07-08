@@ -1,3 +1,4 @@
+# client.py
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import asyncio
@@ -8,7 +9,9 @@ import time
 import os
 import re  # 导入re模块
 from datetime import datetime
+from plyer import notification  # 导入通知模块
 
+NotifyOnMessage = True  # 默认开启消息通知
 TrustUserMode = False  # 不要开启这个，自用
 
 class ChatClient:
@@ -38,7 +41,7 @@ class ChatClient:
             self.username = self.username_entry.get()
         if self.username:
             if not TrustUserMode:
-                # 检查用户名是否符合要求
+                # 用户名是否符合要求
                 if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username):
                     messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20")
                     return
@@ -79,9 +82,8 @@ class ChatClient:
                     color = "green"
                 elif "退出了聊天室" in row[1]:
                     color = "green"
-            self.insert_message(message, color)
-        self.insert_message(f"---以上是历史记录---", "green")
-        self.insert_message(f"/list 查看在线人数", "green")
+            self.insert_message(message, color, notify=False)
+        self.insert_message(f"---以上是历史记录---", "green", notify=False)
         self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
@@ -98,7 +100,7 @@ class ChatClient:
     async def send_message(self, message):
         await self.websocket.send(message)
 
-    def insert_message(self, message, color=None):
+    def insert_message(self, message, color=None, notify=True):
         self.chat_text.config(state='normal')
         if color:
             self.chat_text.insert(tk.END, message + "\n", color)
@@ -106,6 +108,16 @@ class ChatClient:
             self.chat_text.insert(tk.END, message + "\n")
         self.chat_text.config(state='disabled')
         self.chat_text.yview(tk.END)
+
+        if NotifyOnMessage and notify and self.username not in message:
+            self.show_notification(message)
+
+    def show_notification(self, message):
+        notification.notify(
+            title="新消息",
+            message=message,
+            timeout=5
+        )
 
     async def receive_messages(self):
         try:
@@ -134,7 +146,7 @@ class ChatClient:
     def handle_disconnection(self):
         for i in range(1, 6):
             reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……（{i}/5）"
-            self.insert_message(reconnect_message, "orange")
+            self.insert_message(reconnect_message, "orange", notify=False)
             time.sleep(1)
             try:
                 asyncio.run(self.connect())
