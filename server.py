@@ -66,4 +66,5 @@ async def main():
         await asyncio.Future()
 
 if __name__ == "__main__":
+    print('欢迎使用DLChatting 服务端')
     asyncio.run(main())

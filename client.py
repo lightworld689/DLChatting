@@ -33,7 +33,7 @@ class ChatClient:
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"聊天 - {self.username}")
+        self.root.title(f"欢迎使用DLChatting - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
