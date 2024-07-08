@@ -5,7 +5,10 @@ import websockets
 import threading
 import sqlite3
 import time
+import os
 from datetime import datetime
+
+TrustUserMode = False  # 设置为 True 以启用强制使用系统用户名的功能
 
 class ChatClient:
     def __init__(self, root):
@@ -20,20 +23,26 @@ class ChatClient:
         self.login_window.title("登录")
         self.login_window.geometry("300x100")
 
-        tk.Label(self.login_window, text="请输入用户名:").pack(pady=10)
-        self.username_entry = tk.Entry(self.login_window)
-        self.username_entry.pack(pady=5)
-        self.username_entry.bind("<Return>", self.on_login)
+        if TrustUserMode:
+            self.username = os.getlogin()
+            self.on_login()
+        else:
+            tk.Label(self.login_window, text="请输入用户名:").pack(pady=10)
+            self.username_entry = tk.Entry(self.login_window)
+            self.username_entry.pack(pady=5)
+            self.username_entry.bind("<Return>", self.on_login)
 
-    def on_login(self, event):
-        self.username = self.username_entry.get()
+    def on_login(self, event=None):
+        if not TrustUserMode:
+            self.username = self.username_entry.get()
         if self.username:
-            self.login_window.destroy()
+            if not TrustUserMode:
+                self.login_window.destroy()
             self.create_chat_window()
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"欢迎使用DLChatting - {self.username}")
+        self.root.title(f"聊天 - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
