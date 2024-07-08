@@ -8,7 +8,7 @@ import time
 import os
 from datetime import datetime
 
-TrustUserMode = False  # 设置为 True 以启用强制使用系统用户名的功能
+TrustUserMode = False  # 不要开启这个，自用
 
 class ChatClient:
     def __init__(self, root):
