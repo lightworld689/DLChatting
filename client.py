@@ -64,27 +64,10 @@ class ChatClient:
         self.message_entry.bind("<Return>", self.on_send_message)
         self.message_entry.bind("<Shift-Return>", self.on_newline)
 
-        self.load_history()
 
-    def load_history(self):
-        conn = sqlite3.connect('chat.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT username, message FROM (SELECT * FROM messages ORDER BY timestamp DESC LIMIT 20) ORDER BY timestamp')
-        rows = cursor.fetchall()
-        conn.close()
+        # 删除 load_history 调用
+        # self.load_history()
 
-        self.chat_text.config(state='normal')
-        for row in rows:
-            message = f"{row[1]}"
-            color = None
-            if row[0] == "系统":
-                if "加入了聊天室" in row[1]:
-                    color = "green"
-                elif "退出了聊天室" in row[1]:
-                    color = "green"
-            self.insert_message(message, color, notify=False)
-        self.insert_message(f"---以上是历史记录---", "green", notify=False)
-        self.chat_text.config(state='disabled')
 
     def on_send_message(self, event):
         message = self.message_entry.get("1.0", tk.END).strip()
@@ -109,14 +92,16 @@ class ChatClient:
         self.chat_text.config(state='disabled')
         self.chat_text.yview(tk.END)
 
-        if NotifyOnMessage and notify and self.username not in message:
+        # 历史记录不弹窗
+        if NotifyOnMessage and notify and self.username not in message and "---以上是历史记录---" not in message:
             self.show_notification(message)
+
 
     def show_notification(self, message):
         notification.notify(
             title="新消息",
             message=message,
-            timeout=5
+            timeout=2
         )
 
     async def receive_messages(self):
@@ -129,9 +114,12 @@ class ChatClient:
                 elif message.startswith("\033[33m") and message.endswith("\033[0m"):
                     message = message[5:-4]
                     color = "orange"
-                self.insert_message(message, color)
+                # 历史记录结束提示信息不弹窗
+                notify = "---以上是历史记录---" not in message
+                self.insert_message(message, color, notify)
         except websockets.ConnectionClosed:
             self.handle_disconnection()
+
 
     async def connect(self):
         uri = f"ws://localhost:8765/{self.username}"

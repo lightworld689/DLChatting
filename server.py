@@ -51,6 +51,20 @@ async def handle_client(websocket, path):
         return
 
     clients[username] = websocket
+    
+    # 发送最近的30条聊天记录给新连接的客户端
+    conn = sqlite3.connect('chat.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT message FROM (SELECT * FROM messages ORDER BY timestamp DESC LIMIT 30) ORDER BY timestamp')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for row in rows:
+        await websocket.send(row[0])
+    
+    # 发送历史记录结束提示信息
+    await websocket.send("\033[32m---以上是历史记录---\033[0m")
+    
     try:
         join_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: {username} 加入了聊天室"
         await broadcast_message(f"\033[32m{join_message}\033[0m")
