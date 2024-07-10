@@ -1,10 +1,8 @@
-# client.py
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import asyncio
 import websockets
 import threading
-import sqlite3
 import time
 import os
 import re  # 导入re模块
@@ -50,7 +48,7 @@ class ChatClient:
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"欢迎使用DLChatting客户端 - {self.username}")
+        self.root.title(f"【已知bug：发的消息如果有他人的username会导致他人不弹窗，请注意】欢迎使用DLChatting客户端 - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
@@ -63,11 +61,6 @@ class ChatClient:
         self.message_entry.pack(padx=10, pady=10, fill=tk.X)
         self.message_entry.bind("<Return>", self.on_send_message)
         self.message_entry.bind("<Shift-Return>", self.on_newline)
-
-
-        # 删除 load_history 调用
-        # self.load_history()
-
 
     def on_send_message(self, event):
         message = self.message_entry.get("1.0", tk.END).strip()
@@ -92,10 +85,9 @@ class ChatClient:
         self.chat_text.config(state='disabled')
         self.chat_text.yview(tk.END)
 
-        # 历史记录不弹窗
-        if NotifyOnMessage and notify and self.username not in message and "---以上是历史记录---" not in message:
+        # 历史记录不弹窗，自己发的消息不弹窗
+        if NotifyOnMessage and notify and not self.is_receiving_history and self.username not in message:
             self.show_notification(message)
-
 
     def show_notification(self, message):
         notification.notify(
@@ -106,6 +98,7 @@ class ChatClient:
 
     async def receive_messages(self):
         try:
+            self.is_receiving_history = True
             async for message in self.websocket:
                 color = None
                 if message.startswith("\033[32m") and message.endswith("\033[0m"):
@@ -114,12 +107,15 @@ class ChatClient:
                 elif message.startswith("\033[33m") and message.endswith("\033[0m"):
                     message = message[5:-4]
                     color = "orange"
-                # 历史记录结束提示信息不弹窗
-                notify = "---以上是历史记录---" not in message
+                
+                # 检查是否是历史记录的结束标志
+                if "---以上是历史记录---" in message:
+                    self.is_receiving_history = False
+
+                notify = not self.is_receiving_history
                 self.insert_message(message, color, notify)
         except websockets.ConnectionClosed:
             self.handle_disconnection()
-
 
     async def connect(self):
         uri = f"ws://localhost:8765/{self.username}"
@@ -132,9 +128,7 @@ class ChatClient:
         self.loop.run_until_complete(self.connect())
 
     def handle_disconnection(self):
-#        for i in range(1, 6):
         while True:
-#            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……（{i}/5）"
             reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……"
             self.insert_message(reconnect_message, "orange", notify=False)
             time.sleep(1)
