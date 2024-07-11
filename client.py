@@ -20,32 +20,32 @@ class ChatClient:
         self.loop = None
         self.is_receiving_history = False
         self.last_sent_message = None  # 用于存储最后发送的消息
-        self.create_login_window()
+        
+        if TrustUserMode:
+            self.username = os.getlogin()
+            self.create_chat_window()
+            threading.Thread(target=self.run_event_loop).start()
+        else:
+            self.create_login_window()
 
     def create_login_window(self):
         self.login_window = tk.Toplevel(self.root)
         self.login_window.title("登录")
         self.login_window.geometry("300x100")
 
-        if TrustUserMode:
-            self.username = os.getlogin()
-            self.on_login()
-        else:
-            tk.Label(self.login_window, text="请输入用户名:").pack(pady=10)
-            self.username_entry = tk.Entry(self.login_window)
-            self.username_entry.pack(pady=5)
-            self.username_entry.bind("<Return>", self.on_login)
+        tk.Label(self.login_window, text="请输入用户名:").pack(pady=10)
+        self.username_entry = tk.Entry(self.login_window)
+        self.username_entry.pack(pady=5)
+        self.username_entry.bind("<Return>", self.on_login)
 
     def on_login(self, event=None):
-        if not TrustUserMode:
-            self.username = self.username_entry.get()
+        self.username = self.username_entry.get()
         if self.username:
-            if not TrustUserMode:
-                # 用户名是否符合要求
-                if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username):
-                    messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20")
-                    return
-                self.login_window.destroy()
+            # 用户名是否符合要求
+            if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username):
+                messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20")
+                return
+            self.login_window.destroy()
             self.create_chat_window()
             threading.Thread(target=self.run_event_loop).start()
 
