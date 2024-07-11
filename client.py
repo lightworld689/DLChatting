@@ -19,6 +19,7 @@ class ChatClient:
         self.websocket = None
         self.loop = None
         self.is_receiving_history = False
+        self.last_sent_message = None  # 用于存储最后发送的消息
         self.create_login_window()
 
     def create_login_window(self):
@@ -75,6 +76,7 @@ class ChatClient:
         return "break"
 
     async def send_message(self, message):
+        self.last_sent_message = message  # 记录最后发送的消息
         await self.websocket.send(message)
 
     def insert_message(self, message, color=None, notify=True):
@@ -86,12 +88,22 @@ class ChatClient:
         self.chat_text.config(state='disabled')
         self.chat_text.yview(tk.END)
 
-        # 修改检测逻辑：检查消息中是否包含 "] (自己的ID):"
-        is_own_message = f"] {self.username}:" in message
-        
+        # 改进的检测逻辑：检查是否为自己发送的最后一条消息
+        is_own_message = False
+        if self.last_sent_message:
+            # 提取消息内容（去除时间戳和用户名）
+            message_content = re.search(r'\] .*?: (.+)$', message)
+            if message_content:
+                message_content = message_content.group(1)
+                is_own_message = message_content == self.last_sent_message
+
         # 历史记录不弹窗，自己发的消息不弹窗
         if NotifyOnMessage and notify and not self.is_receiving_history and not is_own_message:
             self.show_notification(message)
+
+        # 重置最后发送的消息
+        if is_own_message:
+            self.last_sent_message = None
 
     def show_notification(self, message):
         notification.notify(
