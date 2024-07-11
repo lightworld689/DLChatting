@@ -5,9 +5,9 @@ import websockets
 import threading
 import time
 import os
-import re  # 导入re模块
+import re
 from datetime import datetime
-from plyer import notification  # 导入通知模块
+from plyer import notification
 
 NotifyOnMessage = True  # 默认开启消息通知
 TrustUserMode = False  # 不要开启这个，自用
@@ -18,6 +18,7 @@ class ChatClient:
         self.username = None
         self.websocket = None
         self.loop = None
+        self.is_receiving_history = False
         self.create_login_window()
 
     def create_login_window(self):
@@ -48,7 +49,7 @@ class ChatClient:
             threading.Thread(target=self.run_event_loop).start()
 
     def create_chat_window(self):
-        self.root.title(f"【已知bug：发的消息如果有他人的username会导致他人不弹窗，请注意】欢迎使用DLChatting客户端 - {self.username}")
+        self.root.title(f"欢迎使用DLChatting客户端 - {self.username}")
         self.root.geometry("400x500")
 
         self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
@@ -85,8 +86,11 @@ class ChatClient:
         self.chat_text.config(state='disabled')
         self.chat_text.yview(tk.END)
 
+        # 修改检测逻辑：检查消息中是否包含 "] (自己的ID):"
+        is_own_message = f"] {self.username}:" in message
+        
         # 历史记录不弹窗，自己发的消息不弹窗
-        if NotifyOnMessage and notify and not self.is_receiving_history and self.username not in message:
+        if NotifyOnMessage and notify and not self.is_receiving_history and not is_own_message:
             self.show_notification(message)
 
     def show_notification(self, message):
