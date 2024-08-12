@@ -22,79 +22,79 @@ class ChatClient:
         self.last_sent_message = None  # 用于存储最后发送的消息
         
         if TrustUserMode:
-            self.username = os.getlogin()
-            self.create_chat_window()
-            threading.Thread(target=self.run_event_loop).start()
+            self.username = os.getlogin() # 获取用户名
+            self.create_chat_window() # 创建聊天窗口
+            threading.Thread(target=self.run_event_loop).start() # 启动事件循环
         else:
-            self.create_login_window()
+            self.create_login_window()  # 创建登录窗口
 
     def create_login_window(self):
-        self.login_window = tk.Toplevel(self.root)
-        self.login_window.title("登录")
-        self.login_window.geometry("300x100")
+        self.login_window = tk.Toplevel(self.root) # 创建登录窗口
+        self.login_window.title("登录") # 设置窗口标题
+        self.login_window.geometry("300x100") # 设置窗口大小
 
-        tk.Label(self.login_window, text="请输入用户名:").pack(pady=10)
-        self.username_entry = tk.Entry(self.login_window)
-        self.username_entry.pack(pady=5)
-        self.username_entry.bind("<Return>", self.on_login)
+        tk.Label(self.login_window, text="请输入用户名:").pack(pady=10) # 设置标签
+        self.username_entry = tk.Entry(self.login_window) # 创建输入框
+        self.username_entry.pack(pady=5) # 设置标签位置
+        self.username_entry.bind("<Return>", self.on_login) # 绑定回车事件
 
     def on_login(self, event=None):
-        self.username = self.username_entry.get()
+        self.username = self.username_entry.get() # 获取输入的用户名
         if self.username:
             # 用户名是否符合要求
-            if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username):
-                messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20")
+            if not re.match(r'^[a-zA-Z0-9_]{3,20}$', self.username): 
+                messagebox.showerror("用户名错误", "用户名只能包含26字母、数字及下划线（_），且长度必须为3~20") # 弹窗提示
                 return
-            self.login_window.destroy()
-            self.create_chat_window()
-            threading.Thread(target=self.run_event_loop).start()
+            self.login_window.destroy() # 销毁登录窗口
+            self.create_chat_window() # 创建聊天窗口
+            threading.Thread(target=self.run_event_loop).start() # 启动事件循环
 
     def create_chat_window(self):
-        self.root.title(f"欢迎使用DLChatting客户端 - {self.username}")
-        self.root.geometry("400x500")
+        self.root.title(f"欢迎使用DLChatting客户端 - {self.username}") # 设置窗口标题
+        self.root.geometry("400x500") # 设置窗口大小
 
-        self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled')
-        self.chat_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        self.chat_text = scrolledtext.ScrolledText(self.root, state='disabled') # 创建文本框
+        self.chat_text.pack(padx=10, pady=10, fill=tk.BOTH, expand=True) # 设置文本框位置
 
-        self.chat_text.tag_configure("green", foreground="green")
-        self.chat_text.tag_configure("orange", foreground="orange")
+        self.chat_text.tag_configure("green", foreground="green") # 设置文本颜色
+        self.chat_text.tag_configure("orange", foreground="orange") # 设置文本颜色
 
-        self.message_entry = tk.Text(self.root, height=3)
-        self.message_entry.pack(padx=10, pady=10, fill=tk.X)
-        self.message_entry.bind("<Return>", self.on_send_message)
-        self.message_entry.bind("<Shift-Return>", self.on_newline)
+        self.message_entry = tk.Text(self.root, height=3) # 创建文本框
+        self.message_entry.pack(padx=10, pady=10, fill=tk.X) # 设置文本框位置
+        self.message_entry.bind("<Return>", self.on_send_message) # 绑定回车事件
+        self.message_entry.bind("<Shift-Return>", self.on_newline) # 绑定换行事件
 
     def on_send_message(self, event):
-        message = self.message_entry.get("1.0", tk.END).strip()
+        message = self.message_entry.get("1.0", tk.END).strip() # 获取文本框内容
         if message:
-            asyncio.run_coroutine_threadsafe(self.send_message(message), self.loop)
-            self.message_entry.delete("1.0", tk.END)
+            asyncio.run_coroutine_threadsafe(self.send_message(message), self.loop) # 发送消息
+            self.message_entry.delete("1.0", tk.END) # 清空文本框
         return "break"
 
     def on_newline(self, event):
-        self.message_entry.insert(tk.INSERT, "\n")
-        return "break"
+        self.message_entry.insert(tk.INSERT, "\n") # 插入换行
+        return "break" # 返回
 
-    async def send_message(self, message):
+    async def send_message(self, message):  # 发送消息
         self.last_sent_message = message  # 记录最后发送的消息
-        await self.websocket.send(message)
+        await self.websocket.send(message) # 发送消息
 
-    def insert_message(self, message, color=None, notify=True):
-        self.chat_text.config(state='normal')
+    def insert_message(self, message, color=None, notify=True):  # 插入消息
+        self.chat_text.config(state='normal')  # 设置文本框为可编辑状态
         if color:
-            self.chat_text.insert(tk.END, message + "\n", color)
+            self.chat_text.insert(tk.END, message + "\n", color)  # 在文本框末尾插入消息
         else:
-            self.chat_text.insert(tk.END, message + "\n")
-        self.chat_text.config(state='disabled')
-        self.chat_text.yview(tk.END)
+            self.chat_text.insert(tk.END, message + "\n")  # 在文本框末尾插入消息
+        self.chat_text.config(state='disabled')  # 设置文本框为不可编辑状态
+        self.chat_text.yview(tk.END)  # 滚动到文本框末尾
 
-        # 改进的检测逻辑：检查是否为自己发送的最后一条消息
-        is_own_message = False
-        if self.last_sent_message:
+        # 判断是否为自己发送的消息
+        is_own_message = False 
+        if self.last_sent_message: 
             # 提取消息内容（去除时间戳和用户名）
-            message_content = re.search(r'\] .*?: (.+)$', message)
+            message_content = re.search(r'\] .*?: (.+)$', message) 
             if message_content:
-                message_content = message_content.group(1)
+                message_content = message_content.group(1) # 提取消息内容
                 is_own_message = message_content == self.last_sent_message
 
         # 历史记录不弹窗，自己发的消息不弹窗，且不弹窗消息为“---以上是历史记录---”
@@ -128,28 +128,28 @@ class ChatClient:
                 if "---以上是历史记录---" in message:
                     self.is_receiving_history = False
 
-                notify = not self.is_receiving_history
-                self.insert_message(message, color, notify)
+                notify = not self.is_receiving_history # 是否需要弹窗
+                self.insert_message(message, color, notify) # 插入消息
         except websockets.ConnectionClosed:
-            self.handle_disconnection()
+            self.handle_disconnection() # 处理断开连接
 
     async def connect(self):
-        uri = f"ws://localhost:8765/{self.username}"
-        self.websocket = await websockets.connect(uri)
+        uri = f"ws://localhost:8765/{self.username}" # WebSocket URI
+        self.websocket = await websockets.connect(uri) # 连接服务器
         await self.receive_messages()
 
     def run_event_loop(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self.connect())
+        self.loop = asyncio.new_event_loop() # 创建事件循环
+        asyncio.set_event_loop(self.loop) # 设置事件循环
+        self.loop.run_until_complete(self.connect()) # 运行事件循环
 
     def handle_disconnection(self):
         while True:
-            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……"
-            self.insert_message(reconnect_message, "orange", notify=False)
+            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……" # 重新连接消息
+            self.insert_message(reconnect_message, "orange", notify=False) # 插入消息
             time.sleep(1)
             try:
-                asyncio.run(self.connect())
+                asyncio.run(self.connect()) # 运行事件循环
                 return
             except:
                 continue
