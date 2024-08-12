@@ -14,11 +14,11 @@ TrustUserMode = False  # 不要开启这个，自用
 
 class ChatClient:
     def __init__(self, root):
-        self.root = root
-        self.username = None
-        self.websocket = None
-        self.loop = None
-        self.is_receiving_history = False
+        self.root = root # 窗口
+        self.username = None # 用户名
+        self.websocket = None # websocket
+        self.loop = None # 事件循环
+        self.is_receiving_history = False # 是否正在接收历史消息
         self.last_sent_message = None  # 用于存储最后发送的消息
         
         if TrustUserMode:
@@ -97,8 +97,8 @@ class ChatClient:
                 message_content = message_content.group(1)
                 is_own_message = message_content == self.last_sent_message
 
-        # 历史记录不弹窗，自己发的消息不弹窗
-        if NotifyOnMessage and notify and not self.is_receiving_history and not is_own_message:
+        # 历史记录不弹窗，自己发的消息不弹窗，且不弹窗消息为“---以上是历史记录---”
+        if NotifyOnMessage and notify and not self.is_receiving_history and not is_own_message and message != "---以上是历史记录---":
             self.show_notification(message)
 
         # 重置最后发送的消息
