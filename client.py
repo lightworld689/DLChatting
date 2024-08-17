@@ -144,18 +144,20 @@ class ChatClient:
         self.loop.run_until_complete(self.connect()) # 运行事件循环
 
     def handle_disconnection(self):
-        while True:
-            reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了！正在重新连接……" # 重新连接消息
-            self.insert_message(reconnect_message, "orange", notify=False) # 插入消息
-            time.sleep(1)
-            try:
-                asyncio.run(self.connect()) # 运行事件循环
-                return
-            except:
-                continue
-
-        messagebox.showerror("连接错误", "从服务器断开连接")
-        self.root.quit()
+        reconnect_message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [√] 系统: 掉线了，是否重新连接？（y/n）"
+        self.insert_message(reconnect_message, "orange", notify=False)
+        
+        def ask_reconnect():
+            answer = messagebox.askquestion("连接错误", "掉线了，是否重新连接？")
+            if answer == 'yes':
+                self.chat_text.config(state='normal')
+                self.chat_text.delete(1.0, tk.END)
+                self.chat_text.config(state='disabled')
+                threading.Thread(target=self.run_event_loop).start()
+            else:
+                self.root.quit()
+        
+        self.root.after(0, ask_reconnect)
 
 if __name__ == "__main__":
     root = tk.Tk()
